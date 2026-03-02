@@ -30,6 +30,7 @@ const samplePlaces = [
   { name: "Björkby",   asciiname: "Bjorkby",   lat: 60.5, lon: 17.2, country: "SE", population: 800 },
   { name: "Byron",     asciiname: "Byron",     lat: 58.0, lon: 15.0, country: "SE", population: 5000 },
   { name: "Stockholm", asciiname: "Stockholm", lat: 59.3, lon: 18.1, country: "SE", population: 975000 },
+  { name: "Nyköping",  asciiname: "Nykoping",  lat: 58.75, lon: 17.0, country: "SE", population: 29000 },
   { name: "Belleville", asciiname: "Belleville", lat: 48.8, lon: 2.4, country: "FR", population: 600 },
   { name: "Tinyville",  asciiname: "Tinyville",  lat: 47.0, lon: 2.0, country: "FR", population: 50 },
 ];
@@ -42,10 +43,10 @@ section("Suffix search – filterBySuffix");
 
 (() => {
   const res = App.filterBySuffix(samplePlaces, "by");
-  const names = res.map((p) => p.asciiname);
+  const names = res.map((p) => p.name);
   assert(names.includes("Granby"), "Matches 'Granby' for suffix 'by'");
   assert(names.includes("Solby"), "Matches 'Solby' for suffix 'by'");
-  assert(names.includes("Bjorkby"), "Matches 'Bjorkby' for suffix 'by'");
+  assert(names.includes("Björkby"), "Matches 'Björkby' for suffix 'by'");
   assert(!names.includes("Byron"), "Does NOT match 'Byron' for suffix 'by'");
   assert(!names.includes("Stockholm"), "Does NOT match 'Stockholm' for suffix 'by'");
   assert(res.length === 3, `Returns exactly 3 results (got ${res.length})`);
@@ -58,10 +59,17 @@ section("Suffix search – filterBySuffix");
 
 (() => {
   const res = App.filterBySuffix(samplePlaces, "ville");
-  const names = res.map((p) => p.asciiname);
+  const names = res.map((p) => p.name);
   assert(names.includes("Belleville"), "Matches 'Belleville' for suffix 'ville'");
   assert(names.includes("Tinyville"), "Matches 'Tinyville' for suffix 'ville'");
   assert(res.length === 2, `Returns exactly 2 results for 'ville' (got ${res.length})`);
+})();
+
+(() => {
+  const res = App.filterBySuffix(samplePlaces, "köping");
+  const names = res.map((p) => p.name);
+  assert(names.includes("Nyköping"), "Matches 'Nyköping' for suffix 'köping' (diacritics)");
+  assert(res.length === 1, `Returns exactly 1 result for 'köping' (got ${res.length})`);
 })();
 
 (() => {

@@ -35,8 +35,8 @@ Use the GeoNames country files already in Geonames/ (SE.txt, FR.txt). Add more b
 - Filter to feature class `P` (cities, villages, etc.) to avoid non-city points.
 
 ### 3) Suffix Search
-- Use `asciiname` field for matching (pre-computed by GeoNames).
-- Strip diacritics from user input only, then match against `asciiname.lower()`.
+- Use `name` field for matching to support diacritics (e.g. "köping", "château").
+- Compare suffix and name in lower-case via `name.lower().endsWith(suffix)`.
 - Population filter with default threshold of 500 to limit results and avoid marker overload.
 
 ### 4) Map Data / Visualization

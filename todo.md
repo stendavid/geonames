@@ -17,8 +17,8 @@
 - [x] **Create test.html and tests.js** — Browser-based test runner using `console.assert()`
 - [x] **Build app.js - lazy loading** — Fetch country JSON on selection, cache in memory
 - [x] **Test data caching (console.assert)** — Verify cache hit/miss behavior
-- [x] **Build app.js - suffix search** — Normalize names (lowercase), filter by `endsWith()`
-- [x] **Test suffix matching (console.assert)** — Match/no-match cases, case insensitivity
+- [x] **Build app.js - suffix search** — Match against `name` field (lowercase), supporting diacritics
+- [x] **Test suffix matching (console.assert)** — Match/no-match, case insensitivity, diacritics
 - [x] **Add population filter** — Minimum population threshold (default: 500)
 - [x] **Test population filtering (console.assert)** — Exclude cities below threshold
 - [x] **Build app.js - map plotting** — Add markers to Leaflet map for matching cities

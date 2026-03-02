@@ -56,14 +56,14 @@ function loadCountryData(code) {
 // ── Filtering helpers ───────────────────────────────────────────────
 
 /**
- * Return places whose asciiname ends with the given suffix.
- * Both the suffix and the asciiname are compared in lower-case.
+ * Return places whose name ends with the given suffix.
+ * Both the suffix and the name are compared in lower-case.
  * An empty / whitespace-only suffix returns an empty array.
  */
 function filterBySuffix(places, suffix) {
   const s = suffix.trim().toLowerCase();
   if (s.length === 0) return [];
-  return places.filter((p) => p.asciiname.toLowerCase().endsWith(s));
+  return places.filter((p) => p.name.toLowerCase().endsWith(s));
 }
 
 /**
