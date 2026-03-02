@@ -9,9 +9,9 @@
 - [x] **Parse FR.txt to JSON** — Generate `data/FR.json` with the same structure
 
 ## Phase 2: Core Web Page
-- [ ] **Create index.html structure** — Basic HTML with input field, country selector, result count, map container
-- [ ] **Add Leaflet map container** — Include Leaflet.js CDN and configure OpenStreetMap tiles
-- [ ] **Create style.css** — Layout styling for the search UI and map
+- [x] **Create index.html structure** — Basic HTML with input field, country selector, result count, map container
+- [x] **Add Leaflet map container** — Include Leaflet.js CDN and configure OpenStreetMap tiles
+- [x] **Create style.css** — Layout styling for the search UI and map
 
 ## Phase 3: Application Logic
 - [ ] **Create test.html and tests.js** — Browser-based test runner using `console.assert()`

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoNames Suffix Search Map</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin="" />
+
+  <!-- Leaflet MarkerCluster CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    integrity="sha256-YU3qCpj/P06tdPBJGPax0bm6Q1wltfwjsho5TR4+TYc="
+    crossorigin="" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    integrity="sha256-YSWCMtmNZNwqex4CEw1nQhvFub2lmU7vcCKP+XVwwXA="
+    crossorigin="" />
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>GeoNames Suffix Search</h1>
+  </header>
+
+  <main>
+    <section id="controls">
+      <div class="control-group">
+        <label for="suffix-input">Place name suffix</label>
+        <input type="text" id="suffix-input" placeholder="e.g. -by, -ville, -burg" autocomplete="off" />
+      </div>
+
+      <div class="control-group">
+        <label>Countries</label>
+        <div id="country-selector">
+          <label><input type="checkbox" name="country" value="SE" /> Sweden</label>
+          <label><input type="checkbox" name="country" value="FR" /> France</label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label for="population-input">Min. population</label>
+        <input type="number" id="population-input" value="500" min="0" step="100" />
+      </div>
+
+      <div id="result-count">No results</div>
+    </section>
+
+    <section id="map-section">
+      <div id="map"></div>
+    </section>
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+  <!-- Leaflet MarkerCluster JS -->
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    integrity="sha256-Hk4dIpcqOSb0hZjgyvFOP+cEmDXUKKNE/tT542ZbNQg="
+    crossorigin=""></script>
+
+  <!-- App JS (placeholder, built in Phase 3) -->
+  <script src="app.js"></script>
+</body>
+</html>
