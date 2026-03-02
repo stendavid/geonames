@@ -86,8 +86,28 @@ def parse_file(input_path: Path) -> list[dict]:
     return results
 
 
+def write_json(records: list[dict], output_path: Path) -> None:
+    """Write records as a JSON array."""
+    with open(output_path, "w", encoding="utf-8") as fh:
+        json.dump(records, fh, ensure_ascii=False, indent=1)
+
+
+def write_js(records: list[dict], output_path: Path, country_code: str) -> None:
+    """Write records as a JS file that registers data on window.__geodata.
+
+    The generated file looks like:
+        window.__geodata = window.__geodata || {};
+        window.__geodata["SE"] = [ ... ];
+    This allows loading via a <script> tag without needing an HTTP server.
+    """
+    json_blob = json.dumps(records, ensure_ascii=False)
+    with open(output_path, "w", encoding="utf-8") as fh:
+        fh.write("window.__geodata = window.__geodata || {};\n")
+        fh.write(f'window.__geodata["{country_code}"] = {json_blob};\n')
+
+
 def main(input_path: str, output_path: str) -> None:
-    """CLI entry point: parse a GeoNames TXT file and write JSON."""
+    """CLI entry point: parse a GeoNames TXT file and write JSON + JS."""
     inp = Path(input_path)
     out = Path(output_path)
 
@@ -98,10 +118,18 @@ def main(input_path: str, output_path: str) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
 
     records = parse_file(inp)
-    with open(out, "w", encoding="utf-8") as fh:
-        json.dump(records, fh, ensure_ascii=False, indent=1)
 
+    # Derive country code from input filename (e.g. SE.txt → SE)
+    country_code = inp.stem
+
+    # Write JSON
+    write_json(records, out)
     print(f"Wrote {len(records)} records to {out}")
+
+    # Write JS alongside the JSON (e.g. data/SE.js next to data/SE.json)
+    js_out = out.with_suffix(".js")
+    write_js(records, js_out, country_code)
+    print(f"Wrote {len(records)} records to {js_out}")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from pathlib import Path
 # Make the scripts package importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from parse_geonames import filter_feature_class, parse_line  # noqa: E402
+from parse_geonames import filter_feature_class, parse_line, write_js  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -150,3 +150,38 @@ class TestFilterFeatureClass:
         line_T = VALID_LINE.replace("\tP\t", "\tT\t")
         rec = parse_line(line_T)
         assert filter_feature_class(rec, allowed="T") is True
+
+
+# ---------------------------------------------------------------------------
+# Tests — write_js
+# ---------------------------------------------------------------------------
+
+class TestWriteJs:
+    def test_output_starts_with_geodata_init(self, tmp_path):
+        out = tmp_path / "TEST.js"
+        write_js([{"name": "A"}], out, "TEST")
+        content = out.read_text(encoding="utf-8")
+        assert content.startswith("window.__geodata = window.__geodata || {};\n")
+
+    def test_output_contains_country_assignment(self, tmp_path):
+        out = tmp_path / "SE.js"
+        write_js([{"name": "X"}], out, "SE")
+        content = out.read_text(encoding="utf-8")
+        assert 'window.__geodata["SE"] = ' in content
+
+    def test_output_contains_valid_json_array(self, tmp_path):
+        import json
+        records = [{"name": "Å", "lat": 1.5}]
+        out = tmp_path / "SE.js"
+        write_js(records, out, "SE")
+        content = out.read_text(encoding="utf-8")
+        # Extract the JSON portion after the assignment
+        json_str = content.split(" = ", 1)[1].split(" = ", 1)[1].rstrip(";\n")
+        parsed = json.loads(json_str)
+        assert parsed == records
+
+    def test_preserves_unicode(self, tmp_path):
+        out = tmp_path / "FR.js"
+        write_js([{"name": "Château"}], out, "FR")
+        content = out.read_text(encoding="utf-8")
+        assert "Château" in content

@@ -58,15 +58,21 @@ Use a hosted map tile provider (no local map data needed):
 - `data/` – preprocessed JSON for each country
 
 ### 7) Data Loading Strategy
-Use **lazy loading with caching** to scale well as countries are added:
-- Load country JSON only when selected (not all at once on page load).
-- Cache loaded data in memory so toggling countries is instant after first load.
-- Benefits: fast initial load, scales to many countries, low memory until needed.
+Use **script-tag injection with caching** to avoid needing a local HTTP server:
+- Preprocessing outputs JS files (`data/SE.js`, `data/FR.js`) that register their
+  data on `window.__geodata` (e.g. `window.__geodata["SE"] = [ … ];`).
+- At runtime, `loadCountryData(code)` injects a `<script>` tag for the
+  requested country. The `onload` callback resolves once the data is available.
+- Loaded data is cached in memory so toggling countries is instant after first load.
+- Benefits: works directly from `file://` (no server needed), fast initial load,
+  scales to many countries, low memory until needed.
 
 ### 8) Preprocessing
-Recommended to preprocess the GeoNames TXT into smaller JSON for the browser:
+Preprocess the GeoNames TXT into smaller JS files for the browser:
 - Write a small script to parse SE.txt / FR.txt.
-- Output JSON: array of `{ name, asciiname, lat, lon, country, population }`
+- Output JS files that assign to `window.__geodata["<CODE>"]`:
+  an array of `{ name, asciiname, lat, lon, country, population }`.
+- Also keep the `.json` files for other tooling / tests if desired.
 - Optionally gzip or compress for faster loading.
 
 ## Implementation Steps
@@ -74,10 +80,10 @@ Recommended to preprocess the GeoNames TXT into smaller JSON for the browser:
    - Set up pytest and write tests alongside the code.
 2. **Generate JSON** for SE and FR as a starting dataset.
 3. **Build the webpage**:
-   - Lazy load country JSON on selection (with in-memory caching)
+   - Load country data via script-tag injection (with in-memory caching)
    - Filter by suffix, feature class, and population (default: 500)
    - Plot results on Leaflet map
-   - Set up Vitest and write tests for search logic.
+   - Set up browser-based tests (`console.assert`) for search logic.
 4. **Add UX improvements**:
    - Result list and marker clustering
    - Toggle countries
@@ -91,4 +97,5 @@ Recommended to preprocess the GeoNames TXT into smaller JSON for the browser:
 - `app.js`
 - `style.css`
 - `scripts/parse_geonames.py` (or `scripts/parse_geonames.js`)
-- `data/SE.json`, `data/FR.json`
+- `data/SE.js`, `data/FR.js` (script-tag loadable)
+- `data/SE.json`, `data/FR.json` (optional, for tooling/tests)
