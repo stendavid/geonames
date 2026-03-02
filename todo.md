@@ -24,7 +24,7 @@
 - [x] **Build app.js - map plotting** — Add markers to Leaflet map for matching cities
 
 ## Phase 4: Improvements
-- [ ] **Popup on hover** — Show city name and population when pointer is over a city marker
+- [x] **Popup on hover** — Show city name and population when pointer is over a city marker
 - [ ] **Multiple suffixes with colors** — Allow several suffixes that are displayed with different colors
 
 ## Phase 5: Polish

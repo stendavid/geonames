@@ -119,10 +119,9 @@ function plotMarkers(places) {
 
   places.forEach((p) => {
     const dot = L.circleMarker([p.lat, p.lon], DOT_STYLE);
-    dot.bindPopup(
-      `<strong>${p.name}</strong><br/>` +
-        `Population: ${p.population.toLocaleString()}<br/>` +
-        `Country: ${p.country}`
+    dot.bindTooltip(
+      `<strong>${p.name}</strong><br/>Pop. ${p.population.toLocaleString()}`,
+      { direction: "top", offset: [0, -6] }
     );
     markerLayer.addLayer(dot);
   });
