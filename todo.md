@@ -1,12 +1,12 @@
 # Todo: GeoNames Suffix Search Map
 
 ## Phase 1: Data Preprocessing
-- [ ] **Set up pytest** — Install pytest, create `tests/` directory
-- [ ] **Create preprocessing script** — Python script (`scripts/parse_geonames.py`) to parse GeoNames TXT files
-- [ ] **Test line parsing (pytest)** — Valid lines, missing fields, malformed data
-- [ ] **Test feature class filtering (pytest)** — Keep class `P`, reject others
-- [ ] **Parse SE.txt to JSON** — Generate `data/SE.json` with name, lat, lon, country, population
-- [ ] **Parse FR.txt to JSON** — Generate `data/FR.json` with the same structure
+- [x] **Set up pytest** — Install pytest, create `tests/` directory
+- [x] **Create preprocessing script** — Python script (`scripts/parse_geonames.py`) to parse GeoNames TXT files
+- [x] **Test line parsing (pytest)** — Valid lines, missing fields, malformed data
+- [x] **Test feature class filtering (pytest)** — Keep class `P`, reject others
+- [x] **Parse SE.txt to JSON** — Generate `data/SE.json` with name, lat, lon, country, population
+- [x] **Parse FR.txt to JSON** — Generate `data/FR.json` with the same structure
 
 ## Phase 2: Core Web Page
 - [ ] **Create index.html structure** — Basic HTML with input field, country selector, result count, map container

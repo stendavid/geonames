@@ -2,5 +2,22 @@
 .DS_Store
 **/.DS_Store
 
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+*.venv
+.env
+
+# pytest
+.pytest_cache/
+
 # Downloaded GeoNames country extracts (do not commit)
 Geonames/geoname/
+
+# Generated JSON data
+data/
