@@ -14,15 +14,14 @@
 - [x] **Create style.css** — Layout styling for the search UI and map
 
 ## Phase 3: Application Logic
-- [ ] **Create test.html and tests.js** — Browser-based test runner using `console.assert()`
-- [ ] **Build app.js - lazy loading** — Fetch country JSON on selection, cache in memory
-- [ ] **Test data caching (console.assert)** — Verify cache hit/miss behavior
-- [ ] **Build app.js - suffix search** — Normalize names (lowercase, strip diacritics), filter by `endsWith()`
-- [ ] **Test diacritic stripping (console.assert)** — Normalize user input: `"Malmö"` → `"malmo"`, etc.
-- [ ] **Test suffix matching (console.assert)** — Match/no-match cases, case insensitivity
-- [ ] **Add population filter** — Minimum population threshold (default: 500)
-- [ ] **Test population filtering (console.assert)** — Exclude cities below threshold
-- [ ] **Build app.js - map plotting** — Add markers to Leaflet map for matching cities
+- [x] **Create test.html and tests.js** — Browser-based test runner using `console.assert()`
+- [x] **Build app.js - lazy loading** — Fetch country JSON on selection, cache in memory
+- [x] **Test data caching (console.assert)** — Verify cache hit/miss behavior
+- [x] **Build app.js - suffix search** — Normalize names (lowercase), filter by `endsWith()`
+- [x] **Test suffix matching (console.assert)** — Match/no-match cases, case insensitivity
+- [x] **Add population filter** — Minimum population threshold (default: 500)
+- [x] **Test population filtering (console.assert)** — Exclude cities below threshold
+- [x] **Build app.js - map plotting** — Add markers to Leaflet map for matching cities
 
 ## Phase 4: UX Improvements
 - [ ] **Add country selection UI** — Checkboxes or dropdown to select SE, FR, or both
