@@ -84,9 +84,9 @@ Preprocess the GeoNames TXT into smaller JS files for the browser:
    - Filter by suffix, feature class, and population (default: 500)
    - Plot results on Leaflet map
    - Set up browser-based tests (`console.assert`) for search logic.
-4. **Add UX improvements**:
-   - Result list and marker clustering
-   - Toggle countries
+4. **Add improvements**:
+   - Popup information with city name and population when pointer is over a city
+   - Allow several suffixes that are displayed with different colors
 
 ## Notes on Licensing
 - GeoNames: CC-BY 4.0 (already noted in Geonames/readme.txt)

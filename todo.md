@@ -23,10 +23,9 @@
 - [x] **Test population filtering (console.assert)** — Exclude cities below threshold
 - [x] **Build app.js - map plotting** — Add markers to Leaflet map for matching cities
 
-## Phase 4: UX Improvements
-- [ ] **Add country selection UI** — Checkboxes or dropdown to select SE, FR, or both
-- [ ] **Add marker clustering** — Use Leaflet.markercluster for dense results
-- [ ] **Add result list display** — Show matching place names alongside the map
+## Phase 4: Improvements
+- [ ] **Popup on hover** — Show city name and population when pointer is over a city marker
+- [ ] **Multiple suffixes with colors** — Allow several suffixes that are displayed with different colors
 
 ## Phase 5: Polish
 - [ ] **Add OSM attribution** — Required OpenStreetMap attribution in map corner
