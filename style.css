@@ -94,19 +94,19 @@ main {
   box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.25);
 }
 
-/* ── Country checkboxes ─────────────────────────────────────────── */
-#country-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+/* ── Country select ──────────────────────────────────────────────── */
+#country-select {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  background: #fff;
 }
 
-#country-selector label {
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
+#country-select:focus {
+  outline: none;
+  border-color: #2980b9;
+  box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.25);
 }
 
 /* ── Result count ───────────────────────────────────────────────── */

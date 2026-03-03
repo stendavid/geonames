@@ -76,9 +76,8 @@ function filterByPopulation(places, minPop) {
 // ── UI helpers ──────────────────────────────────────────────────────
 
 function getSelectedCountries() {
-  return Array.from(
-    document.querySelectorAll('#country-selector input[name="country"]:checked')
-  ).map((cb) => cb.value);
+  const val = document.getElementById("country-select").value;
+  return val ? [val] : [];
 }
 
 function getSuffix() {
@@ -214,9 +213,7 @@ const debouncedSearch = debounce(search, 300);
 document.getElementById("suffix-input").addEventListener("input", debouncedSearch);
 document.getElementById("suffix-input-2").addEventListener("input", debouncedSearch);
 document.getElementById("population-input").addEventListener("input", debouncedSearch);
-document
-  .querySelectorAll('#country-selector input[name="country"]')
-  .forEach((cb) => cb.addEventListener("change", search));
+document.getElementById("country-select").addEventListener("change", search);
 
 // ── Expose internals for browser-based tests ────────────────────────
 const App = {
