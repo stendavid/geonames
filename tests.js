@@ -25,14 +25,14 @@ function endSection() {
 // ── Sample data used by several tests ───────────────────────────────
 
 const samplePlaces = [
-  { name: "Granby",    asciiname: "Granby",    lat: 59.9, lon: 17.0, country: "SE", population: 1200 },
-  { name: "Solby",     asciiname: "Solby",     lat: 60.1, lon: 16.5, country: "SE", population: 300 },
-  { name: "Björkby",   asciiname: "Bjorkby",   lat: 60.5, lon: 17.2, country: "SE", population: 800 },
-  { name: "Byron",     asciiname: "Byron",     lat: 58.0, lon: 15.0, country: "SE", population: 5000 },
-  { name: "Stockholm", asciiname: "Stockholm", lat: 59.3, lon: 18.1, country: "SE", population: 975000 },
-  { name: "Nyköping",  asciiname: "Nykoping",  lat: 58.75, lon: 17.0, country: "SE", population: 29000 },
-  { name: "Belleville", asciiname: "Belleville", lat: 48.8, lon: 2.4, country: "FR", population: 600 },
-  { name: "Tinyville",  asciiname: "Tinyville",  lat: 47.0, lon: 2.0, country: "FR", population: 50 },
+  { name: "Granby",    lat: 59.9, lon: 17.0, country: "SE", population: 1200 },
+  { name: "Solby",     lat: 60.1, lon: 16.5, country: "SE", population: 300 },
+  { name: "Björkby",   lat: 60.5, lon: 17.2, country: "SE", population: 800 },
+  { name: "Byron",     lat: 58.0, lon: 15.0, country: "SE", population: 5000 },
+  { name: "Stockholm", lat: 59.3, lon: 18.1, country: "SE", population: 975000 },
+  { name: "Nyköping",  lat: 58.75, lon: 17.0, country: "SE", population: 29000 },
+  { name: "Belleville", lat: 48.8, lon: 2.4, country: "FR", population: 600 },
+  { name: "Tinyville",  lat: 47.0, lon: 2.0, country: "FR", population: 50 },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -97,15 +97,15 @@ section("Population filtering – filterByPopulation");
 
 (() => {
   const res = App.filterByPopulation(samplePlaces, 500);
-  assert(res.length === 5, `5 places have pop ≥ 500 (got ${res.length})`);
-  const names = res.map((p) => p.asciiname);
+  assert(res.length === 6, `6 places have pop ≥ 500 (got ${res.length})`);
+  const names = res.map((p) => p.name);
   assert(!names.includes("Solby"), "Solby (300) excluded at threshold 500");
   assert(!names.includes("Tinyville"), "Tinyville (50) excluded at threshold 500");
 })();
 
 (() => {
   const res = App.filterByPopulation(samplePlaces, 1200);
-  assert(res.some((p) => p.asciiname === "Granby"), "Granby (1200) included at threshold 1200 (boundary)");
+  assert(res.some((p) => p.name === "Granby"), "Granby (1200) included at threshold 1200 (boundary)");
 })();
 
 (() => {
@@ -135,7 +135,7 @@ section("Data caching – loadCountryData");
   assert(App.cache["SE"] === undefined, "Cache is empty before first load");
 
   // 1) Direct cache insertion — loadCountryData returns cached reference
-  const fakeData = [{ name: "Testby", asciiname: "Testby", lat: 60, lon: 17, country: "SE", population: 100 }];
+  const fakeData = [{ name: "Testby", lat: 60, lon: 17, country: "SE", population: 100 }];
   App.cache["SE"] = fakeData;
 
   assert(App.cache["SE"] === fakeData, "Data is stored in cache after assignment");
@@ -148,7 +148,7 @@ section("Data caching – loadCountryData");
   // 2) Simulate window.__geodata pre-registration (as a data/*.js file would)
   delete App.cache["SE"];
   window.__geodata = window.__geodata || {};
-  window.__geodata["_TEST_"] = [{ name: "Foo", asciiname: "Foo", lat: 0, lon: 0, country: "XX", population: 1 }];
+  window.__geodata["_TEST_"] = [{ name: "Foo", lat: 0, lon: 0, country: "XX", population: 1 }];
 
   App.loadCountryData("_TEST_").then((data) => {
     assert(data === window.__geodata["_TEST_"], "loadCountryData picks up window.__geodata when cache is empty");

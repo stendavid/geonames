@@ -50,10 +50,6 @@ class TestParseLineValid:
         assert rec is not None
         assert rec["name"] == "Stockholm"
 
-    def test_parses_asciiname(self):
-        rec = parse_line(VALID_LINE)
-        assert rec["asciiname"] == "Stockholm"
-
     def test_parses_lat_lon(self):
         rec = parse_line(VALID_LINE)
         assert abs(rec["lat"] - 59.33258) < 1e-5

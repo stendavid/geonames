@@ -7,7 +7,6 @@ from pathlib import Path
 # Column indices in the GeoNames "geoname" table (tab-delimited)
 COL_GEONAMEID = 0
 COL_NAME = 1
-COL_ASCIINAME = 2
 COL_LATITUDE = 4
 COL_LONGITUDE = 5
 COL_FEATURE_CLASS = 6
@@ -45,7 +44,6 @@ def parse_line(line: str) -> dict | None:
     return {
         "geonameid": fields[COL_GEONAMEID],
         "name": fields[COL_NAME],
-        "asciiname": fields[COL_ASCIINAME],
         "lat": latitude,
         "lon": longitude,
         "feature_class": fields[COL_FEATURE_CLASS],
@@ -64,7 +62,6 @@ def slim_record(record: dict) -> dict:
     """Return only the fields needed by the frontend."""
     return {
         "name": record["name"],
-        "asciiname": record["asciiname"],
         "lat": record["lat"],
         "lon": record["lon"],
         "country": record["country"],

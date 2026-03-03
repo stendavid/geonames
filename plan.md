@@ -31,7 +31,7 @@ Use the GeoNames country files already in Geonames/ (SE.txt, FR.txt). Add more b
 - Input files are tab-delimited UTF-8.
 - Use the “geoname” table columns described in Geonames/readme.txt.
 - Only keep needed fields to reduce memory:
-  - `geonameid`, `name`, `asciiname`, `latitude`, `longitude`, `feature class`, `feature code`, `country code`, `population`
+  - `geonameid`, `name`, `latitude`, `longitude`, `feature class`, `feature code`, `country code`, `population`
 - Filter to feature class `P` (cities, villages, etc.) to avoid non-city points.
 
 ### 3) Suffix Search
@@ -71,7 +71,7 @@ Use **script-tag injection with caching** to avoid needing a local HTTP server:
 Preprocess the GeoNames TXT into smaller JS files for the browser:
 - Write a small script to parse SE.txt / FR.txt.
 - Output JS files that assign to `window.__geodata["<CODE>"]`:
-  an array of `{ name, asciiname, lat, lon, country, population }`.
+  an array of `{ name, lat, lon, country, population }`.
 - Also keep the `.json` files for other tooling / tests if desired.
 - Optionally gzip or compress for faster loading.
 
