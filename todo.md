@@ -25,7 +25,7 @@
 
 ## Phase 4: Improvements
 - [x] **Popup on hover** — Show city name and population when pointer is over a city marker
-- [ ] **Multiple suffixes with colors** — Allow several suffixes that are displayed with different colors
+- [x] **Multiple suffixes with colors** — Allow several suffixes that are displayed with different colors
 
 ## Phase 5: Polish
 - [ ] **Add OSM attribution** — Required OpenStreetMap attribution in map corner

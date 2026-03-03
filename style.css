@@ -63,15 +63,31 @@ main {
   color: #555;
 }
 
+.suffix-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.suffix-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 #suffix-input,
+#suffix-input-2,
 #population-input {
   padding: 0.5rem 0.6rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.95rem;
+  flex: 1;
 }
 
 #suffix-input:focus,
+#suffix-input-2:focus,
 #population-input:focus {
   outline: none;
   border-color: #2980b9;

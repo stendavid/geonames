@@ -85,6 +85,10 @@ function getSuffix() {
   return document.getElementById("suffix-input").value;
 }
 
+function getSuffix2() {
+  return document.getElementById("suffix-input-2").value;
+}
+
 function getMinPopulation() {
   const val = parseInt(document.getElementById("population-input").value, 10);
   return Number.isNaN(val) ? 0 : val;
@@ -105,11 +109,20 @@ const DOT_STYLE = {
   fillOpacity: 0.7,
 };
 
+const DOT_STYLE_2 = {
+  radius: 4,
+  weight: 0.5,
+  color: "#922b21",
+  fillColor: "#e74c3c",
+  fillOpacity: 0.7,
+};
+
 /**
- * Clear existing markers and plot the given places as small circle
- * dots on the map.
+ * Clear existing markers and plot the given place groups as small
+ * circle dots on the map.  Accepts an array of { places, style }
+ * objects so multiple suffixes show in different colours.
  */
-function plotMarkers(places) {
+function plotMarkers(groups) {
   // Remove previous layer
   if (markerLayer) {
     map.removeLayer(markerLayer);
@@ -117,20 +130,28 @@ function plotMarkers(places) {
 
   markerLayer = L.layerGroup();
 
-  places.forEach((p) => {
-    const dot = L.circleMarker([p.lat, p.lon], DOT_STYLE);
-    dot.bindTooltip(
-      `<strong>${p.name}</strong><br/>Pop. ${p.population.toLocaleString()}`,
-      { direction: "top", offset: [0, -6] }
-    );
-    markerLayer.addLayer(dot);
+  // Backward-compat: if called with a plain array, wrap it
+  if (Array.isArray(groups) && groups.length > 0 && !groups[0].places) {
+    groups = [{ places: groups, style: DOT_STYLE }];
+  }
+
+  groups.forEach(({ places, style }) => {
+    places.forEach((p) => {
+      const dot = L.circleMarker([p.lat, p.lon], style);
+      dot.bindTooltip(
+        `<strong>${p.name}</strong><br/>Pop. ${p.population.toLocaleString()}`,
+        { direction: "top", offset: [0, -6] }
+      );
+      markerLayer.addLayer(dot);
+    });
   });
 
   map.addLayer(markerLayer);
 
   // Fit map bounds to results (if any)
-  if (places.length > 0) {
-    const bounds = L.featureGroup(markerLayer.getLayers()).getBounds();
+  const allLayers = markerLayer.getLayers();
+  if (allLayers.length > 0) {
+    const bounds = L.featureGroup(allLayers).getBounds();
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
   }
 }
@@ -140,25 +161,40 @@ function plotMarkers(places) {
 async function search() {
   const countries = getSelectedCountries();
   const suffix = getSuffix();
+  const suffix2 = getSuffix2();
   const minPop = getMinPopulation();
 
-  // Nothing selected or no suffix → clear map
-  if (countries.length === 0 || suffix.trim().length === 0) {
-    plotMarkers([]);
+  const hasSuffix1 = suffix.trim().length > 0;
+  const hasSuffix2 = suffix2.trim().length > 0;
+
+  // Nothing selected or no suffixes → clear map
+  if (countries.length === 0 || (!hasSuffix1 && !hasSuffix2)) {
+    plotMarkers([{ places: [], style: DOT_STYLE }]);
     setResultCount(0);
     return;
   }
 
   // Load all selected country data in parallel
   const datasets = await Promise.all(countries.map(loadCountryData));
-
-  // Merge, filter by suffix, then by population
   const merged = datasets.flat();
-  const bySuffix = filterBySuffix(merged, suffix);
-  const results = filterByPopulation(bySuffix, minPop);
 
-  plotMarkers(results);
-  setResultCount(results.length);
+  const groups = [];
+  let totalCount = 0;
+
+  if (hasSuffix1) {
+    const results1 = filterByPopulation(filterBySuffix(merged, suffix), minPop);
+    groups.push({ places: results1, style: DOT_STYLE });
+    totalCount += results1.length;
+  }
+
+  if (hasSuffix2) {
+    const results2 = filterByPopulation(filterBySuffix(merged, suffix2), minPop);
+    groups.push({ places: results2, style: DOT_STYLE_2 });
+    totalCount += results2.length;
+  }
+
+  plotMarkers(groups);
+  setResultCount(totalCount);
 }
 
 // ── Debounce helper ─────────────────────────────────────────────────
@@ -176,6 +212,7 @@ function debounce(fn, ms) {
 const debouncedSearch = debounce(search, 300);
 
 document.getElementById("suffix-input").addEventListener("input", debouncedSearch);
+document.getElementById("suffix-input-2").addEventListener("input", debouncedSearch);
 document.getElementById("population-input").addEventListener("input", debouncedSearch);
 document
   .querySelectorAll('#country-selector input[name="country"]')
@@ -189,8 +226,11 @@ const App = {
   filterByPopulation,
   getSelectedCountries,
   getSuffix,
+  getSuffix2,
   getMinPopulation,
   setResultCount,
   plotMarkers,
   search,
+  DOT_STYLE,
+  DOT_STYLE_2,
 };
