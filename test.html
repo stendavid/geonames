@@ -34,11 +34,12 @@
 
   <!-- Hidden elements required by app.js DOM queries -->
   <section id="controls">
-    <div id="country-selector">
-      <label><input type="checkbox" name="country" value="SE" /></label>
-      <label><input type="checkbox" name="country" value="FR" /></label>
-    </div>
+    <select id="country-select">
+      <option value="SE">Sweden</option>
+      <option value="FR">France</option>
+    </select>
     <input type="text" id="suffix-input" value="" />
+    <input type="text" id="suffix-input-2" value="" />
     <input type="number" id="population-input" value="500" />
     <div id="result-count"></div>
   </section>
