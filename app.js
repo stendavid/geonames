@@ -206,6 +206,30 @@ function debounce(fn, ms) {
   };
 }
 
+// ── Populate country dropdown ───────────────────────────────────────
+
+/**
+ * Populate the country dropdown from window.__geodata.countries.
+ * Called on page load after countries.js has been loaded.
+ */
+function populateCountryDropdown() {
+  const select = document.getElementById("country-select");
+  const countries = window.__geodata?.countries || [];
+  
+  // Clear existing options except the placeholder
+  while (select.options.length > 1) {
+    select.remove(1);
+  }
+  
+  // Add options for each available country
+  countries.forEach(country => {
+    const option = document.createElement("option");
+    option.value = country.code;
+    option.textContent = country.name;
+    select.appendChild(option);
+  });
+}
+
 // ── Event wiring ────────────────────────────────────────────────────
 
 const debouncedSearch = debounce(search, 300);
@@ -214,6 +238,10 @@ document.getElementById("suffix-input").addEventListener("input", debouncedSearc
 document.getElementById("suffix-input-2").addEventListener("input", debouncedSearch);
 document.getElementById("population-input").addEventListener("input", debouncedSearch);
 document.getElementById("country-select").addEventListener("change", search);
+
+// ── Initialize on page load ─────────────────────────────────────────
+
+populateCountryDropdown();
 
 // ── Expose internals for browser-based tests ────────────────────────
 const App = {
@@ -228,6 +256,7 @@ const App = {
   setResultCount,
   plotMarkers,
   search,
+  populateCountryDropdown,
   DOT_STYLE,
   DOT_STYLE_2,
 };
