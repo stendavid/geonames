@@ -129,12 +129,12 @@ def parse_country_info(country_info_path: Path) -> Dict[str, str]:
 
 
 def get_available_countries(data_dir: Path) -> List[str]:
-    """Scan data directory for .json files and return list of country codes."""
+    """Scan data directory for .js files and return list of country codes."""
     country_codes = []
-    for json_file in sorted(data_dir.glob("*.json")):
-        code = json_file.stem
-        # Exclude the allCountries file
-        if code != "allCountries":
+    for js_file in sorted(data_dir.glob("*.js")):
+        code = js_file.stem
+        # Exclude the countries metadata file
+        if code != "countries":
             country_codes.append(code)
     return country_codes
 
@@ -174,7 +174,7 @@ def generate_countries_metadata(
 
 
 def main(input_path: str, output_path: str) -> None:
-    """CLI entry point: parse a GeoNames TXT file and write JSON + JS."""
+    """CLI entry point: parse a GeoNames TXT file and write JS."""
     inp = Path(input_path)
     out = Path(output_path)
 
@@ -189,14 +189,9 @@ def main(input_path: str, output_path: str) -> None:
     # Derive country code from input filename (e.g. SE.txt → SE)
     country_code = inp.stem
 
-    # Write JSON
-    write_json(records, out)
+    # Write JS file (e.g. data/SE.js)
+    write_js(records, out, country_code)
     print(f"Wrote {len(records)} records to {out}")
-
-    # Write JS alongside the JSON (e.g. data/SE.js next to data/SE.json)
-    js_out = out.with_suffix(".js")
-    write_js(records, js_out, country_code)
-    print(f"Wrote {len(records)} records to {js_out}")
 
 
 if __name__ == "__main__":
@@ -217,6 +212,6 @@ if __name__ == "__main__":
         main(sys.argv[1], sys.argv[2])
     else:
         print(f"Usage:", file=sys.stderr)
-        print(f"  {sys.argv[0]} <input.txt> <output.json>  - Parse geonames data", file=sys.stderr)
-        print(f"  {sys.argv[0]} --generate-countries       - Generate countries metadata", file=sys.stderr)
+        print(f"  {sys.argv[0]} <input.txt> <output.js>  - Parse geonames data", file=sys.stderr)
+        print(f"  {sys.argv[0]} --generate-countries     - Generate countries metadata", file=sys.stderr)
         sys.exit(1)
