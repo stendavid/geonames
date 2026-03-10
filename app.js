@@ -116,6 +116,29 @@ const DOT_STYLE_2 = {
   fillOpacity: 0.7,
 };
 
+const DOT_STYLE_FADED = {
+  radius: 3,
+  weight: 0.5,
+  color: "#999",
+  fillColor: "#ccc",
+  fillOpacity: 0.3,
+};
+
+const DOT_STYLE_HIGHLIGHT = {
+  radius: 5,
+  weight: 0.5,
+  color: "#d68910",
+  fillColor: "#f39c12",
+  fillOpacity: 0.85,
+};
+
+// Track current highlight state
+let currentHighlight = {
+  active: false,
+  suffix: null,
+  countryCode: null,
+};
+
 /**
  * Clear existing markers and plot the given place groups as small
  * circle dots on the map.  Accepts an array of { places, style }
@@ -152,6 +175,290 @@ function plotMarkers(groups) {
   if (allLayers.length > 0) {
     const bounds = L.featureGroup(allLayers).getBounds();
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 10 });
+  }
+}
+
+// ── Suffix highlighting mode ────────────────────────────────────────
+
+/**
+ * Highlight all places with a specific suffix.
+ * Only shows places matching the suffix, not the rest.
+ */
+async function highlightSuffix(suffix, countryCode) {
+  if (!suffix || !countryCode) return;
+  
+  // Load country data if needed
+  const places = await loadCountryData(countryCode);
+  
+  // Update highlight state
+  currentHighlight = {
+    active: true,
+    suffix: suffix,
+    countryCode: countryCode,
+  };
+  
+  // Filter places by suffix
+  const highlighted = filterBySuffix(places, suffix);
+  
+  // Plot only the highlighted places
+  const groups = [
+    { places: highlighted, style: DOT_STYLE_HIGHLIGHT },
+  ];
+  
+  plotMarkers(groups);
+  
+  // Update UI to show what's highlighted
+  updateHighlightInfo(suffix, highlighted.length);
+}
+
+/**
+ * Clear the highlight mode and return to normal search view.
+ */
+function clearHighlight() {
+  currentHighlight = {
+    active: false,
+    suffix: null,
+    countryCode: null,
+  };
+  
+  // Clear highlight info
+  const infoEl = document.getElementById("highlight-info");
+  if (infoEl) {
+    infoEl.textContent = "";
+    infoEl.style.display = "none";
+  }
+  
+  // Re-run normal search
+  search();
+}
+
+/**
+ * Update the UI to show current highlight information.
+ */
+function updateHighlightInfo(suffix, count) {
+  const infoEl = document.getElementById("highlight-info");
+  if (infoEl) {
+    infoEl.textContent = `Showing: "${suffix}" (${count} places) — `;
+    infoEl.style.display = "block";
+    
+    // Add clear button if not already present
+    if (!infoEl.querySelector(".clear-highlight-btn")) {
+      const clearBtn = document.createElement("button");
+      clearBtn.textContent = "Clear";
+      clearBtn.className = "clear-highlight-btn";
+      clearBtn.onclick = clearHighlight;
+      infoEl.appendChild(clearBtn);
+    }
+  }
+}
+
+// ── Regional suffix analysis ────────────────────────────────────────
+
+/**
+ * Calculate standard deviation of an array of numbers.
+ */
+function standardDeviation(values) {
+  if (values.length === 0) return 0;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  const squareDiffs = values.map((v) => Math.pow(v - mean, 2));
+  const variance = squareDiffs.reduce((sum, v) => sum + v, 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+/**
+ * Determine a simple regional label based on centroid position
+ * relative to the bounding box of all places.
+ */
+function getRegionLabel(lat, lon, allPlaces) {
+  const lats = allPlaces.map((p) => p.lat);
+  const lons = allPlaces.map((p) => p.lon);
+  
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+  
+  const latRange = maxLat - minLat;
+  const lonRange = maxLon - minLon;
+  
+  // Thresholds for regional classification
+  const northThreshold = minLat + latRange * 0.6;
+  const southThreshold = minLat + latRange * 0.4;
+  const eastThreshold = minLon + lonRange * 0.6;
+  const westThreshold = minLon + lonRange * 0.4;
+  
+  let region = "";
+  
+  if (lat > northThreshold) region = "Northern";
+  else if (lat < southThreshold) region = "Southern";
+  else region = "Central";
+  
+  if (lonRange > latRange * 0.5) {
+    // Country is wide enough to distinguish east/west
+    if (lon > eastThreshold) region += " Eastern";
+    else if (lon < westThreshold) region += " Western";
+  }
+  
+  return region.trim();
+}
+
+/**
+ * Analyze place names in a country to find regional suffixes.
+ * Returns an array of suffix objects sorted by "regionality" (low spread score).
+ * 
+ * @param {Array} places - Array of place objects with name, lat, lon
+ * @param {Number} minLength - Minimum suffix length (default 2)
+ * @param {Number} maxLength - Maximum suffix length (default 5)
+ * @param {Number} minOccurrences - Minimum times a suffix must appear (default 10)
+ * @param {Number} maxResults - Maximum number of results to return (default 30)
+ * @returns {Array} Array of {suffix, count, spreadScore, centroid, region}
+ */
+function analyzeSuffixes(places, minLength = 2, maxLength = 5, minOccurrences = 10, maxResults = 30) {
+  if (!places || places.length === 0) return [];
+  
+  // Build a map of suffix → array of places
+  const suffixMap = new Map();
+  
+  places.forEach((place) => {
+    const name = place.name.toLowerCase();
+    // Extract suffixes of various lengths
+    for (let len = minLength; len <= maxLength; len++) {
+      if (name.length > len) {
+        const suffix = name.slice(-len);
+        if (!suffixMap.has(suffix)) {
+          suffixMap.set(suffix, []);
+        }
+        suffixMap.get(suffix).push(place);
+      }
+    }
+  });
+  
+  // Calculate spread score for each suffix
+  const results = [];
+  
+  suffixMap.forEach((suffixPlaces, suffix) => {
+    if (suffixPlaces.length < minOccurrences) return;
+    
+    const lats = suffixPlaces.map((p) => p.lat);
+    const lons = suffixPlaces.map((p) => p.lon);
+    
+    const meanLat = lats.reduce((sum, v) => sum + v, 0) / lats.length;
+    const meanLon = lons.reduce((sum, v) => sum + v, 0) / lons.length;
+    
+    const latStd = standardDeviation(lats);
+    const lonStd = standardDeviation(lons);
+    
+    // Spread score: lower = more clustered/regional
+    // Normalize by sqrt of count to favor suffixes that appear frequently
+    const spreadScore = (latStd + lonStd) / Math.sqrt(suffixPlaces.length);
+    
+    const region = getRegionLabel(meanLat, meanLon, places);
+    
+    results.push({
+      suffix: suffix,
+      count: suffixPlaces.length,
+      spreadScore: spreadScore,
+      centroid: { lat: meanLat, lon: meanLon },
+      region: region,
+    });
+  });
+  
+  // Sort by spread score (ascending - most regional first)
+  results.sort((a, b) => a.spreadScore - b.spreadScore);
+  
+  // Filter out redundant sub-suffixes
+  // For example, if "-eim" and "-heim" have similar counts, keep only "-heim"
+  const filtered = [];
+  const used = new Set();
+  
+  for (const result of results) {
+    if (used.has(result.suffix)) continue;
+    
+    // Check if this suffix is contained in a longer suffix with similar count
+    let isRedundant = false;
+    for (const other of results) {
+      if (other.suffix === result.suffix) continue;
+      if (other.suffix.length <= result.suffix.length) continue;
+      
+      // Check if other ends with this suffix
+      if (other.suffix.endsWith(result.suffix)) {
+        // Compare counts - if within 20% or same, the shorter one is redundant
+        const countDiff = Math.abs(result.count - other.count);
+        const maxCount = Math.max(result.count, other.count);
+        const tolerance = maxCount * 0.2;
+        
+        if (countDiff <= tolerance) {
+          isRedundant = true;
+          used.add(result.suffix);
+          break;
+        }
+      }
+    }
+    
+    if (!isRedundant) {
+      filtered.push(result);
+      if (filtered.length >= maxResults) break;
+    }
+  }
+  
+  return filtered;
+}
+
+/**
+ * Populate the regional suffixes sidebar with suggestions.
+ */
+async function updateRegionalSuggestions() {
+  const panel = document.getElementById("regional-suffixes-panel");
+  const listEl = document.getElementById("regional-suffixes-list");
+  const countries = getSelectedCountries();
+  
+  if (!panel || !listEl) return;
+  
+  // Hide panel if no country selected
+  if (countries.length === 0) {
+    panel.style.display = "none";
+    return;
+  }
+  
+  // Show loading state
+  panel.style.display = "flex";
+  listEl.innerHTML = '<div class="loading">Analyzing suffixes...</div>';
+  
+  try {
+    // Load country data
+    const countryCode = countries[0];
+    const places = await loadCountryData(countryCode);
+    
+    // Filter by minimum population
+    const minPop = getMinPopulation();
+    const filteredPlaces = filterByPopulation(places, minPop);
+    
+    // Analyze suffixes
+    const suggestions = analyzeSuffixes(filteredPlaces);
+    
+    // Clear loading and populate
+    listEl.innerHTML = "";
+    
+    if (suggestions.length === 0) {
+      listEl.innerHTML = '<div class="no-results">No regional patterns found</div>';
+      return;
+    }
+    
+    // Create suffix cards
+    suggestions.forEach((item) => {
+      const card = document.createElement("button");
+      card.className = "suffix-card";
+      card.innerHTML = `
+        <div class="suffix-name">-${item.suffix}</div>
+        <div class="suffix-info">${item.count} places · <span class="suffix-score">score ${item.spreadScore.toFixed(3)}</span></div>
+        <div class="suffix-region">${item.region}</div>
+      `;
+      card.onclick = () => highlightSuffix(item.suffix, countryCode);
+      listEl.appendChild(card);
+    });
+  } catch (error) {
+    console.error("Failed to analyze suffixes:", error);
+    listEl.innerHTML = '<div class="error">Failed to analyze suffixes</div>';
   }
 }
 
@@ -236,8 +543,15 @@ const debouncedSearch = debounce(search, 300);
 
 document.getElementById("suffix-input").addEventListener("input", debouncedSearch);
 document.getElementById("suffix-input-2").addEventListener("input", debouncedSearch);
-document.getElementById("population-input").addEventListener("input", debouncedSearch);
-document.getElementById("country-select").addEventListener("change", search);
+document.getElementById("population-input").addEventListener("input", () => {
+  debouncedSearch();
+  debounce(updateRegionalSuggestions, 300)();
+});
+document.getElementById("country-select").addEventListener("change", () => {
+  clearHighlight(); // Clear any active highlight
+  search();
+  updateRegionalSuggestions();
+});
 
 // ── Initialize on page load ─────────────────────────────────────────
 
@@ -257,6 +571,12 @@ const App = {
   plotMarkers,
   search,
   populateCountryDropdown,
+  analyzeSuffixes,
+  highlightSuffix,
+  clearHighlight,
+  updateRegionalSuggestions,
   DOT_STYLE,
   DOT_STYLE_2,
+  DOT_STYLE_FADED,
+  DOT_STYLE_HIGHLIGHT,
 };
