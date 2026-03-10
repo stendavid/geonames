@@ -182,6 +182,31 @@ main {
   flex-shrink: 0;
 }
 
+.regional-suffixes-controls {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 1px solid #eee;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.regional-suffixes-controls label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #555;
+  white-space: nowrap;
+}
+
+.regional-suffixes-controls input {
+  flex: 1;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  min-width: 0;
+}
+
 #regional-suffixes-list {
   padding: 1rem;
   overflow-y: auto;

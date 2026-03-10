@@ -93,6 +93,11 @@ function getMinPopulation() {
   return Number.isNaN(val) ? 0 : val;
 }
 
+function getMinPlaces() {
+  const val = parseInt(document.getElementById("min-places-input").value, 10);
+  return Number.isNaN(val) || val < 1 ? 100 : val;
+}
+
 function setResultCount(n) {
   const el = document.getElementById("result-count");
   el.textContent = n === 0 ? "No results" : `${n} result${n !== 1 ? "s" : ""}`;
@@ -453,8 +458,9 @@ async function updateRegionalSuggestions() {
     const minPop = getMinPopulation();
     const filteredPlaces = filterByPopulation(places, minPop);
     
-    // Analyze suffixes
-    const suggestions = analyzeSuffixes(filteredPlaces);
+    // Analyze suffixes with user-specified minimum
+    const minPlaces = getMinPlaces();
+    const suggestions = analyzeSuffixes(filteredPlaces, 2, 5, minPlaces, 30);
     
     // Clear loading and populate
     listEl.innerHTML = "";
@@ -567,6 +573,9 @@ document.getElementById("population-input").addEventListener("input", () => {
   debouncedSearch();
   debounce(updateRegionalSuggestions, 300)();
 });
+document.getElementById("min-places-input").addEventListener("input", () => {
+  debounce(updateRegionalSuggestions, 300)();
+});
 document.getElementById("country-select").addEventListener("change", () => {
   clearHighlight(); // Clear any active highlight
   search();
@@ -587,6 +596,7 @@ const App = {
   getSuffix,
   getSuffix2,
   getMinPopulation,
+  getMinPlaces,
   setResultCount,
   plotMarkers,
   search,
