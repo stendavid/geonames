@@ -1,4 +1,4 @@
-# GeoNames Place Name Suffix Mapper
+# GeoNames Place Name Suffix Explorer
 
 An interactive web application for exploring and visualizing place name patterns by their suffixes. Search for places ending in specific suffixes (like "-by", "-ville", "-burg") and see where they appear on a map. This tool helps discover linguistic and historical settlement patterns across different countries.
 
