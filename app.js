@@ -255,17 +255,6 @@ function updateHighlightInfo(suffix, count) {
 // ── Regional suffix analysis ────────────────────────────────────────
 
 /**
- * Calculate standard deviation of an array of numbers.
- */
-function standardDeviation(values) {
-  if (values.length === 0) return 0;
-  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
-  const squareDiffs = values.map((v) => Math.pow(v - mean, 2));
-  const variance = squareDiffs.reduce((sum, v) => sum + v, 0) / values.length;
-  return Math.sqrt(variance);
-}
-
-/**
  * Determine a simple regional label based on centroid position
  * relative to the bounding box of all places.
  */
@@ -304,17 +293,38 @@ function getRegionLabel(lat, lon, allPlaces) {
 
 /**
  * Analyze place names in a country to find regional suffixes.
- * Returns an array of suffix objects sorted by "regionality" (low spread score).
+ * Uses geographic entropy to identify suffixes that cluster in specific regions.
+ * Low entropy = concentrated/regional. High entropy = uniformly distributed.
  * 
  * @param {Array} places - Array of place objects with name, lat, lon
  * @param {Number} minLength - Minimum suffix length (default 2)
  * @param {Number} maxLength - Maximum suffix length (default 5)
  * @param {Number} minOccurrences - Minimum times a suffix must appear (default 10)
  * @param {Number} maxResults - Maximum number of results to return (default 30)
- * @returns {Array} Array of {suffix, count, spreadScore, centroid, region}
+ * @returns {Array} Array of {suffix, count, entropy, centroid, region}
  */
 function analyzeSuffixes(places, minLength = 2, maxLength = 5, minOccurrences = 10, maxResults = 30) {
   if (!places || places.length === 0) return [];
+  
+  // Calculate bounding box for grid
+  const lats = places.map((p) => p.lat);
+  const lons = places.map((p) => p.lon);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLon = Math.min(...lons);
+  const maxLon = Math.max(...lons);
+  
+  // Create a grid (6x6 gives good granularity without being too fine)
+  const gridSize = 6;
+  const latStep = (maxLat - minLat) / gridSize;
+  const lonStep = (maxLon - minLon) / gridSize;
+  
+  // Helper function to get grid cell for a place
+  function getGridCell(lat, lon) {
+    const row = Math.min(Math.floor((lat - minLat) / latStep), gridSize - 1);
+    const col = Math.min(Math.floor((lon - minLon) / lonStep), gridSize - 1);
+    return row * gridSize + col;
+  }
   
   // Build a map of suffix → array of places
   const suffixMap = new Map();
@@ -333,38 +343,48 @@ function analyzeSuffixes(places, minLength = 2, maxLength = 5, minOccurrences = 
     }
   });
   
-  // Calculate spread score for each suffix
+  // Calculate entropy for each suffix
   const results = [];
   
   suffixMap.forEach((suffixPlaces, suffix) => {
     if (suffixPlaces.length < minOccurrences) return;
     
+    // Count how many places with this suffix are in each grid cell
+    const cellCounts = new Array(gridSize * gridSize).fill(0);
+    suffixPlaces.forEach((p) => {
+      const cell = getGridCell(p.lat, p.lon);
+      cellCounts[cell]++;
+    });
+    
+    // Calculate Shannon entropy
+    let entropy = 0;
+    const total = suffixPlaces.length;
+    for (const count of cellCounts) {
+      if (count > 0) {
+        const p = count / total;
+        entropy -= p * Math.log2(p);
+      }
+    }
+    
+    // Calculate centroid for region labeling
     const lats = suffixPlaces.map((p) => p.lat);
     const lons = suffixPlaces.map((p) => p.lon);
-    
     const meanLat = lats.reduce((sum, v) => sum + v, 0) / lats.length;
     const meanLon = lons.reduce((sum, v) => sum + v, 0) / lons.length;
-    
-    const latStd = standardDeviation(lats);
-    const lonStd = standardDeviation(lons);
-    
-    // Spread score: lower = more clustered/regional
-    // Normalize by sqrt of count to favor suffixes that appear frequently
-    const spreadScore = (latStd + lonStd) / Math.sqrt(suffixPlaces.length);
     
     const region = getRegionLabel(meanLat, meanLon, places);
     
     results.push({
       suffix: suffix,
       count: suffixPlaces.length,
-      spreadScore: spreadScore,
+      entropy: entropy,
       centroid: { lat: meanLat, lon: meanLon },
       region: region,
     });
   });
   
-  // Sort by spread score (ascending - most regional first)
-  results.sort((a, b) => a.spreadScore - b.spreadScore);
+  // Sort by entropy (ascending - lower entropy = more regional)
+  results.sort((a, b) => a.entropy - b.entropy);
   
   // Filter out redundant sub-suffixes
   // For example, if "-eim" and "-heim" have similar counts, keep only "-heim"
@@ -450,7 +470,7 @@ async function updateRegionalSuggestions() {
       card.className = "suffix-card";
       card.innerHTML = `
         <div class="suffix-name">-${item.suffix}</div>
-        <div class="suffix-info">${item.count} places · <span class="suffix-score">score ${item.spreadScore.toFixed(3)}</span></div>
+        <div class="suffix-info">${item.count} places · <span class="suffix-score">entropy ${item.entropy.toFixed(3)}</span></div>
         <div class="suffix-region">${item.region}</div>
       `;
       card.onclick = () => highlightSuffix(item.suffix, countryCode);
