@@ -1,9 +1,18 @@
 """Parse GeoNames tab-delimited TXT files into compact JSON for the browser."""
 
+import argparse
 import json
+import os
+import re
 import sys
+import zipfile
 from pathlib import Path
 from typing import List, Dict
+from urllib.request import urlopen
+from urllib.error import HTTPError, URLError
+
+# GeoNames download URL base
+GEONAMES_DOWNLOAD_URL = "https://download.geonames.org/export/dump/"
 
 # Column indices in the GeoNames "geoname" table (tab-delimited)
 COL_GEONAMEID = 0
@@ -173,6 +182,151 @@ def generate_countries_metadata(
     print(f"Generated countries metadata with {len(countries_metadata)} countries: {output_path}")
 
 
+def validate_country_code(country_code: str) -> bool:
+    """Validate that country code is 2 uppercase letters."""
+    return bool(re.match(r'^[A-Z]{2}$', country_code))
+
+
+def download_country(country_code: str, workspace_root: Path, force: bool = False) -> bool:
+    """Download a country's GeoNames data from geonames.org.
+    
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code (e.g., 'ES', 'NO')
+        workspace_root: Root directory of the workspace
+        force: If True, overwrite existing files
+    
+    Returns:
+        True if download successful, False otherwise
+    """
+    # Validate country code format
+    if not validate_country_code(country_code):
+        print(f"Error: Invalid country code '{country_code}'. Must be 2 uppercase letters.", file=sys.stderr)
+        return False
+    
+    # Set up paths
+    geonames_dir = workspace_root / "Geonames" / "geoname"
+    geonames_dir.mkdir(parents=True, exist_ok=True)
+    
+    output_txt = geonames_dir / f"{country_code}.txt"
+    
+    # Check if file already exists
+    if output_txt.exists() and not force:
+        print(f"Country '{country_code}' already exists at {output_txt}")
+        print(f"Use --force flag to overwrite existing data.")
+        return False
+    
+    # Download the zip file
+    zip_url = f"{GEONAMES_DOWNLOAD_URL}{country_code}.zip"
+    print(f"Downloading {country_code} from {zip_url}...")
+    
+    try:
+        with urlopen(zip_url) as response:
+            zip_data = response.read()
+    except HTTPError as e:
+        if e.code == 404:
+            print(f"Error: Country code '{country_code}' not found on geonames.org (404)", file=sys.stderr)
+        else:
+            print(f"Error: HTTP {e.code} when downloading {zip_url}", file=sys.stderr)
+        return False
+    except URLError as e:
+        print(f"Error: Network error when downloading {zip_url}: {e.reason}", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Error: Unexpected error when downloading: {e}", file=sys.stderr)
+        return False
+    
+    # Extract the zip file
+    print(f"Extracting {country_code}.zip...")
+    try:
+        # Write zip to temporary location
+        temp_zip = geonames_dir / f"{country_code}.zip.tmp"
+        with open(temp_zip, "wb") as f:
+            f.write(zip_data)
+        
+        # Extract the txt file
+        with zipfile.ZipFile(temp_zip, 'r') as zip_ref:
+            # The zip should contain a file named {country_code}.txt
+            expected_filename = f"{country_code}.txt"
+            if expected_filename not in zip_ref.namelist():
+                print(f"Error: Expected file '{expected_filename}' not found in zip archive", file=sys.stderr)
+                print(f"Archive contains: {zip_ref.namelist()}", file=sys.stderr)
+                os.remove(temp_zip)
+                return False
+            
+            # Extract to the geonames directory
+            zip_ref.extract(expected_filename, geonames_dir)
+        
+        # Clean up temp zip file
+        os.remove(temp_zip)
+        print(f"Successfully downloaded and extracted {country_code} data to {output_txt}")
+        return True
+        
+    except zipfile.BadZipFile:
+        print(f"Error: Downloaded file is not a valid zip archive", file=sys.stderr)
+        if temp_zip.exists():
+            os.remove(temp_zip)
+        return False
+    except Exception as e:
+        print(f"Error: Failed to extract zip file: {e}", file=sys.stderr)
+        if temp_zip.exists():
+            os.remove(temp_zip)
+        return False
+
+
+def download_and_process(country_code: str, workspace_root: Path, force: bool = False) -> bool:
+    """Download a country's data and automatically parse it.
+    
+    This orchestrates the complete workflow:
+    1. Download and extract the country data
+    2. Parse it to JS format
+    3. Regenerate the countries metadata
+    
+    Args:
+        country_code: ISO 3166-1 alpha-2 country code
+        workspace_root: Root directory of the workspace
+        force: If True, overwrite existing files
+    
+    Returns:
+        True if all steps successful, False otherwise
+    """
+    # Step 1: Download
+    print(f"=== Downloading {country_code} ===")
+    if not download_country(country_code, workspace_root, force):
+        return False
+    
+    # Step 2: Parse to JS format
+    print(f"\n=== Parsing {country_code} data ===")
+    input_path = workspace_root / "Geonames" / "geoname" / f"{country_code}.txt"
+    output_path = workspace_root / "data" / f"{country_code}.js"
+    
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        records = parse_file(input_path)
+        write_js(records, output_path, country_code)
+        print(f"Wrote {len(records)} records to {output_path}")
+    except Exception as e:
+        print(f"Error: Failed to parse data: {e}", file=sys.stderr)
+        return False
+    
+    # Step 3: Regenerate countries metadata
+    print(f"\n=== Updating countries metadata ===")
+    try:
+        data_dir = workspace_root / "data"
+        country_info_path = workspace_root / "Geonames" / "countryInfo.txt"
+        countries_output = data_dir / "countries.js"
+        
+        if not country_info_path.exists():
+            print(f"Warning: {country_info_path} not found. Skipping countries metadata update.", file=sys.stderr)
+        else:
+            generate_countries_metadata(data_dir, country_info_path, countries_output)
+    except Exception as e:
+        print(f"Error: Failed to update countries metadata: {e}", file=sys.stderr)
+        return False
+    
+    print(f"\n✓ Successfully downloaded and processed {country_code}")
+    return True
+
+
 def main(input_path: str, output_path: str) -> None:
     """CLI entry point: parse a GeoNames TXT file and write JS."""
     inp = Path(input_path)
@@ -195,9 +349,62 @@ def main(input_path: str, output_path: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 2 and sys.argv[1] == "--generate-countries":
-        # Generate countries.js metadata file
-        workspace_root = Path(__file__).parent.parent
+    parser = argparse.ArgumentParser(
+        description="Parse GeoNames data files and manage country downloads",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Download and process a country automatically
+  %(prog)s --download ES
+  
+  # Re-download and update existing country data
+  %(prog)s --download NO --force
+  
+  # Parse a GeoNames data file manually
+  %(prog)s Geonames/geoname/SE.txt data/SE.js
+  
+  # Generate countries metadata
+  %(prog)s --generate-countries
+"""
+    )
+    
+    parser.add_argument(
+        "input_file",
+        nargs="?",
+        help="Input GeoNames TXT file to parse"
+    )
+    parser.add_argument(
+        "output_file",
+        nargs="?",
+        help="Output JS file path"
+    )
+    parser.add_argument(
+        "--download",
+        metavar="COUNTRY_CODE",
+        help="Download and process a country by its ISO code (e.g., ES, NO, IT)"
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force overwrite of existing country data when using --download"
+    )
+    parser.add_argument(
+        "--generate-countries",
+        action="store_true",
+        help="Generate countries.js metadata file from available data"
+    )
+    
+    args = parser.parse_args()
+    workspace_root = Path(__file__).parent.parent
+    
+    # Handle --download flag
+    if args.download:
+        country_code = args.download.upper()
+        success = download_and_process(country_code, workspace_root, args.force)
+        sys.exit(0 if success else 1)
+    
+    # Handle --generate-countries flag
+    elif args.generate_countries:
         data_dir = workspace_root / "data"
         country_info_path = workspace_root / "Geonames" / "countryInfo.txt"
         output_path = data_dir / "countries.js"
@@ -207,11 +414,12 @@ if __name__ == "__main__":
             sys.exit(1)
         
         generate_countries_metadata(data_dir, country_info_path, output_path)
-    elif len(sys.argv) == 3:
-        # Parse geonames data file
-        main(sys.argv[1], sys.argv[2])
+    
+    # Handle manual parsing mode
+    elif args.input_file and args.output_file:
+        main(args.input_file, args.output_file)
+    
+    # No valid arguments provided
     else:
-        print(f"Usage:", file=sys.stderr)
-        print(f"  {sys.argv[0]} <input.txt> <output.js>  - Parse geonames data", file=sys.stderr)
-        print(f"  {sys.argv[0]} --generate-countries     - Generate countries metadata", file=sys.stderr)
+        parser.print_help()
         sys.exit(1)

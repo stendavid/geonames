@@ -6,7 +6,7 @@ from pathlib import Path
 # Make the scripts package importable
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from parse_geonames import filter_feature_class, parse_line, write_js  # noqa: E402
+from parse_geonames import filter_feature_class, parse_line, write_js, validate_country_code  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -181,3 +181,172 @@ class TestWriteJs:
         write_js([{"name": "Château"}], out, "FR")
         content = out.read_text(encoding="utf-8")
         assert "Château" in content
+
+
+# ---------------------------------------------------------------------------
+# Tests — validate_country_code
+# ---------------------------------------------------------------------------
+
+class TestValidateCountryCode:
+    def test_accepts_valid_uppercase_codes(self):
+        assert validate_country_code("SE") is True
+        assert validate_country_code("FR") is True
+        assert validate_country_code("NO") is True
+        assert validate_country_code("ES") is True
+
+    def test_rejects_lowercase_codes(self):
+        assert validate_country_code("se") is False
+        assert validate_country_code("fr") is False
+
+    def test_rejects_mixed_case(self):
+        assert validate_country_code("Se") is False
+        assert validate_country_code("sE") is False
+
+    def test_rejects_single_letter(self):
+        assert validate_country_code("S") is False
+
+    def test_rejects_three_letters(self):
+        assert validate_country_code("SWE") is False
+
+    def test_rejects_numbers(self):
+        assert validate_country_code("S1") is False
+        assert validate_country_code("12") is False
+
+    def test_rejects_empty_string(self):
+        assert validate_country_code("") is False
+
+    def test_rejects_special_characters(self):
+        assert validate_country_code("S-") is False
+        assert validate_country_code("S_") is False
+
+
+# ---------------------------------------------------------------------------
+# Tests — download_country (mocked)
+# ---------------------------------------------------------------------------
+
+class TestDownloadCountry:
+    """Test download_country function with mocked network calls."""
+
+    def test_rejects_invalid_country_code(self, tmp_path):
+        """Should reject invalid country codes without attempting download."""
+        from parse_geonames import download_country
+        
+        result = download_country("se", tmp_path, force=False)
+        assert result is False
+        
+        result = download_country("SWE", tmp_path, force=False)
+        assert result is False
+
+    def test_skips_existing_country_without_force(self, tmp_path):
+        """Should skip download if country data already exists and force=False."""
+        from parse_geonames import download_country
+        
+        # Create existing file
+        geonames_dir = tmp_path / "Geonames" / "geoname"
+        geonames_dir.mkdir(parents=True, exist_ok=True)
+        existing_file = geonames_dir / "SE.txt"
+        existing_file.write_text("existing data")
+        
+        result = download_country("SE", tmp_path, force=False)
+        assert result is False
+        assert existing_file.read_text() == "existing data"
+
+    def test_overwrites_with_force_flag(self, tmp_path):
+        """Should attempt download if force=True even when file exists."""
+        from parse_geonames import download_country
+        from unittest.mock import patch, MagicMock
+        import zipfile
+        import io
+        
+        # Create existing file
+        geonames_dir = tmp_path / "Geonames" / "geoname"
+        geonames_dir.mkdir(parents=True, exist_ok=True)
+        existing_file = geonames_dir / "SE.txt"
+        existing_file.write_text("old data")
+        
+        # Mock the download
+        mock_zip = io.BytesIO()
+        with zipfile.ZipFile(mock_zip, 'w') as zf:
+            zf.writestr("SE.txt", "new data from geonames")
+        mock_zip.seek(0)
+        
+        mock_response = MagicMock()
+        mock_response.read.return_value = mock_zip.read()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+        
+        with patch('parse_geonames.urlopen', return_value=mock_response):
+            result = download_country("SE", tmp_path, force=True)
+        
+        assert result is True
+        assert existing_file.read_text() == "new data from geonames"
+
+    def test_handles_404_error_gracefully(self, tmp_path):
+        """Should return False and print error message on 404."""
+        from parse_geonames import download_country
+        from unittest.mock import patch
+        from urllib.error import HTTPError
+        
+        mock_error = HTTPError("url", 404, "Not Found", {}, None)
+        
+        with patch('parse_geonames.urlopen', side_effect=mock_error):
+            result = download_country("ZZ", tmp_path, force=False)
+        
+        assert result is False
+
+    def test_handles_network_error_gracefully(self, tmp_path):
+        """Should return False and print error message on network failure."""
+        from parse_geonames import download_country
+        from unittest.mock import patch
+        from urllib.error import URLError
+        
+        mock_error = URLError("Network unreachable")
+        
+        with patch('parse_geonames.urlopen', side_effect=mock_error):
+            result = download_country("NO", tmp_path, force=False)
+        
+        assert result is False
+
+    def test_successful_download_and_extraction(self, tmp_path):
+        """Should successfully download and extract a country zip file."""
+        from parse_geonames import download_country
+        from unittest.mock import patch, MagicMock
+        import zipfile
+        import io
+        
+        # Create a mock zip file with country data
+        mock_zip = io.BytesIO()
+        with zipfile.ZipFile(mock_zip, 'w') as zf:
+            zf.writestr("NO.txt", "mock geonames data for Norway")
+        mock_zip.seek(0)
+        
+        mock_response = MagicMock()
+        mock_response.read.return_value = mock_zip.read()
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+        
+        with patch('parse_geonames.urlopen', return_value=mock_response):
+            result = download_country("NO", tmp_path, force=False)
+        
+        assert result is True
+        
+        # Verify file was extracted
+        output_file = tmp_path / "Geonames" / "geoname" / "NO.txt"
+        assert output_file.exists()
+        assert output_file.read_text() == "mock geonames data for Norway"
+
+    def test_handles_corrupted_zip(self, tmp_path):
+        """Should handle corrupted zip files gracefully."""
+        from parse_geonames import download_country
+        from unittest.mock import patch, MagicMock
+        
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"not a valid zip file"
+        mock_response.__enter__ = MagicMock(return_value=mock_response)
+        mock_response.__exit__ = MagicMock(return_value=False)
+        
+        with patch('parse_geonames.urlopen', return_value=mock_response):
+            result = download_country("IT", tmp_path, force=False)
+        
+        assert result is False
+
