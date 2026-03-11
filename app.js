@@ -4,6 +4,23 @@
 const cache = {};           // country code → array of place objects
 let markerLayer = null;     // current LayerGroup of circle markers on the map
 
+// ── Dynamic suffix inputs ───────────────────────────────────────────
+const COLOR_PALETTE = [
+  { color: '#2e86c1', border: '#1a5276' },  // Blue
+  { color: '#e74c3c', border: '#922b21' },  // Red
+  { color: '#27ae60', border: '#186a3b' },  // Green
+  { color: '#f39c12', border: '#d68910' },  // Orange
+  { color: '#9b59b6', border: '#6c3483' },  // Purple
+  { color: '#1abc9c', border: '#117a65' },  // Turquoise
+  { color: '#e67e22', border: '#a04000' },  // Dark Orange
+  { color: '#3498db', border: '#21618c' },  // Light Blue
+  { color: '#e91e63', border: '#880e4f' },  // Pink
+  { color: '#00bcd4', border: '#006064' },  // Cyan
+];
+
+let suffixInputs = [];  // Array of {id, color, element}
+let nextInputId = 1;
+
 // ── Map initialisation ─────────────────────────────────────────────
 const map = L.map("map").setView([54, 10], 4); // Center on northern Europe
 
@@ -53,6 +70,92 @@ function loadCountryData(code) {
   });
 }
 
+// ── Dynamic suffix input management ─────────────────────────────────
+
+/**
+ * Create a new suffix input box with a color swatch and remove button.
+ */
+function createSuffixInput() {
+  const id = nextInputId++;
+  const colorIndex = (suffixInputs.length) % COLOR_PALETTE.length;
+  const colors = COLOR_PALETTE[colorIndex];
+  
+  const container = document.createElement('div');
+  container.className = 'control-group suffix-input-group';
+  container.dataset.inputId = id;
+  
+  const label = document.createElement('label');
+  label.textContent = `Place name suffix ${suffixInputs.length + 1}`;
+  label.htmlFor = `suffix-input-${id}`;
+  
+  const row = document.createElement('div');
+  row.className = 'suffix-row';
+  
+  const swatch = document.createElement('span');
+  swatch.className = 'suffix-swatch';
+  swatch.style.background = colors.color;
+  
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = `suffix-input-${id}`;
+  input.className = 'suffix-input';
+  input.placeholder = 'e.g. -by, -ville, -burg';
+  input.autocomplete = 'off';
+  input.addEventListener('input', debounce(search, 300));
+  
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'remove-suffix-btn';
+  removeBtn.innerHTML = '×';
+  removeBtn.title = 'Remove this search box';
+  removeBtn.onclick = () => removeSuffixInput(id);
+  
+  row.appendChild(swatch);
+  row.appendChild(input);
+  row.appendChild(removeBtn);
+  
+  container.appendChild(label);
+  container.appendChild(row);
+  
+  const inputData = { id, colors, element: container, input };
+  suffixInputs.push(inputData);
+  
+  const inputsContainer = document.getElementById('suffix-inputs-container');
+  inputsContainer.appendChild(container);
+  
+  return inputData;
+}
+
+/**
+ * Remove a suffix input box by ID.
+ */
+function removeSuffixInput(id) {
+  const index = suffixInputs.findIndex(item => item.id === id);
+  if (index === -1) return;
+  
+  // Don't allow removing the last input box
+  if (suffixInputs.length === 1) return;
+  
+  const inputData = suffixInputs[index];
+  inputData.element.remove();
+  suffixInputs.splice(index, 1);
+  
+  // Re-number the labels
+  suffixInputs.forEach((item, i) => {
+    const label = item.element.querySelector('label');
+    label.textContent = `Place name suffix ${i + 1}`;
+  });
+  
+  search();
+}
+
+/**
+ * Initialize suffix inputs with the default two boxes.
+ */
+function initializeSuffixInputs() {
+  createSuffixInput();
+  createSuffixInput();
+}
+
 // ── Filtering helpers ───────────────────────────────────────────────
 
 /**
@@ -93,12 +196,11 @@ function getSelectedCountries() {
   return val ? [val] : [];
 }
 
-function getSuffix() {
-  return document.getElementById("suffix-input").value;
-}
-
-function getSuffix2() {
-  return document.getElementById("suffix-input-2").value;
+function getAllSuffixes() {
+  return suffixInputs.map(item => ({
+    value: item.input.value,
+    colors: item.colors
+  }));
 }
 
 function getMinPopulation() {
@@ -118,21 +220,18 @@ function setResultCount(n) {
 
 // ── Map plotting ────────────────────────────────────────────────────
 
-const DOT_STYLE = {
-  radius: 4,
-  weight: 0.5,
-  color: "#1a5276",
-  fillColor: "#2e86c1",
-  fillOpacity: 0.7,
-};
-
-const DOT_STYLE_2 = {
-  radius: 4,
-  weight: 0.5,
-  color: "#922b21",
-  fillColor: "#e74c3c",
-  fillOpacity: 0.7,
-};
+/**
+ * Generate a marker style for a given color.
+ */
+function createMarkerStyle(colors) {
+  return {
+    radius: 4,
+    weight: 0.5,
+    color: colors.border,
+    fillColor: colors.color,
+    fillOpacity: 0.7,
+  };
+}
 
 const DOT_STYLE_FADED = {
   radius: 3,
@@ -505,16 +604,15 @@ async function updateRegionalSuggestions() {
 
 async function search() {
   const countries = getSelectedCountries();
-  const suffix = getSuffix();
-  const suffix2 = getSuffix2();
+  const suffixes = getAllSuffixes();
   const minPop = getMinPopulation();
 
-  const hasSuffix1 = suffix.trim().length > 0;
-  const hasSuffix2 = suffix2.trim().length > 0;
+  // Check if any suffix has content
+  const hasAnySuffix = suffixes.some(s => s.value.trim().length > 0);
 
   // Nothing selected or no suffixes → clear map
-  if (countries.length === 0 || (!hasSuffix1 && !hasSuffix2)) {
-    plotMarkers([{ places: [], style: DOT_STYLE }]);
+  if (countries.length === 0 || !hasAnySuffix) {
+    plotMarkers([]);
     setResultCount(0);
     return;
   }
@@ -526,17 +624,15 @@ async function search() {
   const groups = [];
   let totalCount = 0;
 
-  if (hasSuffix1) {
-    const results1 = filterByPopulation(filterBySuffix(merged, suffix), minPop);
-    groups.push({ places: results1, style: DOT_STYLE });
-    totalCount += results1.length;
-  }
-
-  if (hasSuffix2) {
-    const results2 = filterByPopulation(filterBySuffix(merged, suffix2), minPop);
-    groups.push({ places: results2, style: DOT_STYLE_2 });
-    totalCount += results2.length;
-  }
+  // Process each suffix input
+  suffixes.forEach(suffix => {
+    if (suffix.value.trim().length > 0) {
+      const results = filterByPopulation(filterBySuffix(merged, suffix.value), minPop);
+      const style = createMarkerStyle(suffix.colors);
+      groups.push({ places: results, style });
+      totalCount += results.length;
+    }
+  });
 
   plotMarkers(groups);
   setResultCount(totalCount);
@@ -583,12 +679,8 @@ function populateCountryDropdown() {
 
 // ── Event wiring ────────────────────────────────────────────────────
 
-const debouncedSearch = debounce(search, 300);
-
-document.getElementById("suffix-input").addEventListener("input", debouncedSearch);
-document.getElementById("suffix-input-2").addEventListener("input", debouncedSearch);
 document.getElementById("population-input").addEventListener("input", () => {
-  debouncedSearch();
+  debounce(search, 300)();
   debounce(updateRegionalSuggestions, 300)();
 });
 document.getElementById("min-places-input").addEventListener("input", () => {
@@ -599,10 +691,14 @@ document.getElementById("country-select").addEventListener("change", () => {
   search();
   updateRegionalSuggestions();
 });
+document.getElementById("add-suffix-btn").addEventListener("click", () => {
+  createSuffixInput();
+});
 
 // ── Initialize on page load ─────────────────────────────────────────
 
 populateCountryDropdown();
+initializeSuffixInputs();
 
 // ── Expose internals for browser-based tests ────────────────────────
 const App = {
@@ -611,8 +707,7 @@ const App = {
   filterBySuffix,
   filterByPopulation,
   getSelectedCountries,
-  getSuffix,
-  getSuffix2,
+  getAllSuffixes,
   getMinPopulation,
   getMinPlaces,
   setResultCount,
@@ -623,8 +718,10 @@ const App = {
   highlightSuffix,
   clearHighlight,
   updateRegionalSuggestions,
-  DOT_STYLE,
-  DOT_STYLE_2,
+  createMarkerStyle,
   DOT_STYLE_FADED,
   DOT_STYLE_HIGHLIGHT,
+  createSuffixInput,
+  removeSuffixInput,
+  initializeSuffixInputs,
 };

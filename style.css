@@ -38,7 +38,7 @@ main {
 
 /* ── Controls sidebar ───────────────────────────────────────────── */
 #controls {
-  width: 280px;
+  width: 300px;
   flex-shrink: 0;
   background: #fff;
   border-right: 1px solid #ddd;
@@ -76,22 +76,74 @@ main {
   flex-shrink: 0;
 }
 
-#suffix-input,
-#suffix-input-2,
+.suffix-input,
 #population-input {
   padding: 0.5rem 0.6rem;
   border: 1px solid #ccc;
   border-radius: 4px;
   font-size: 0.95rem;
   flex: 1;
+  min-width: 0; /* Allow input to shrink below content size */
 }
 
-#suffix-input:focus,
-#suffix-input-2:focus,
+.suffix-input:focus,
 #population-input:focus {
   outline: none;
   border-color: #2980b9;
   box-shadow: 0 0 0 2px rgba(41, 128, 185, 0.25);
+}
+
+/* ── Suffix input buttons ───────────────────────────────────────── */
+.add-suffix-btn {
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #2980b9;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  align-self: flex-start;
+  margin-top: -0.5rem;
+}
+
+.add-suffix-btn:hover {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.remove-suffix-btn {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fff;
+  color: #999;
+  font-size: 1.2rem;
+  font-weight: 400;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  padding-bottom: 1px;
+}
+
+.remove-suffix-btn:hover {
+  background: #fee;
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+#suffix-inputs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 /* ── Regex hint ─────────────────────────────────────────────────── */
