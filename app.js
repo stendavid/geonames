@@ -81,12 +81,8 @@ function createSuffixInput() {
   const colors = COLOR_PALETTE[colorIndex];
   
   const container = document.createElement('div');
-  container.className = 'control-group suffix-input-group';
+  container.className = 'suffix-input-group';
   container.dataset.inputId = id;
-  
-  const label = document.createElement('label');
-  label.textContent = `Place name suffix ${suffixInputs.length + 1}`;
-  label.htmlFor = `suffix-input-${id}`;
   
   const row = document.createElement('div');
   row.className = 'suffix-row';
@@ -109,11 +105,10 @@ function createSuffixInput() {
   removeBtn.title = 'Remove this search box';
   removeBtn.onclick = () => removeSuffixInput(id);
   
-  row.appendChild(swatch);
   row.appendChild(input);
+  row.appendChild(swatch);
   row.appendChild(removeBtn);
   
-  container.appendChild(label);
   container.appendChild(row);
   
   const inputData = { id, colors, element: container, input };
@@ -138,12 +133,6 @@ function removeSuffixInput(id) {
   const inputData = suffixInputs[index];
   inputData.element.remove();
   suffixInputs.splice(index, 1);
-  
-  // Re-number the labels
-  suffixInputs.forEach((item, i) => {
-    const label = item.element.querySelector('label');
-    label.textContent = `Place name suffix ${i + 1}`;
-  });
   
   search();
 }
