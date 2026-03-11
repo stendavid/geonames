@@ -567,8 +567,13 @@ function populateCountryDropdown() {
     select.remove(1);
   }
   
+  // Sort countries alphabetically by name
+  const sortedCountries = [...countries].sort((a, b) => 
+    a.name.localeCompare(b.name)
+  );
+  
   // Add options for each available country
-  countries.forEach(country => {
+  sortedCountries.forEach(country => {
     const option = document.createElement("option");
     option.value = country.code;
     option.textContent = country.name;
