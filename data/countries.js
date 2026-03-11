@@ -13,6 +13,10 @@ window.__geodata.countries = [
     "name": "Norway"
   },
   {
+    "code": "PL",
+    "name": "Poland"
+  },
+  {
     "code": "SE",
     "name": "Sweden"
   }
