@@ -25,6 +25,16 @@ Search for suffix patterns like:
 
 Use ISO 3166-1 alpha-2 country codes: `US`, `GB`, `DE`, `IT`, `NO`, `SE`, `FR`, `ES`, `JP`, etc.
 
+### Regex Support
+
+The suffix search supports regular expressions for powerful pattern matching:
+- `(by|ville)` - matches places ending in either "by" or "ville"
+- `[aeiou]n` - matches places ending in a vowel followed by 'n'
+- `borg|burg` - matches places ending in "borg" or "burg"
+- `st[ae]d` - matches "stad" or "sted"
+
+Searches are case-insensitive and automatically anchored to match at the end of place names.
+
 ## License
 
 GeoNames data is licensed under [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/).

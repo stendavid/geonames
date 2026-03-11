@@ -56,14 +56,27 @@ function loadCountryData(code) {
 // ── Filtering helpers ───────────────────────────────────────────────
 
 /**
- * Return places whose name ends with the given suffix.
- * Both the suffix and the name are compared in lower-case.
+ * Return places whose name ends with the given suffix pattern.
+ * The suffix is treated as a regex pattern and matched case-insensitively.
+ * A '$' anchor is automatically added if not present to ensure suffix matching.
  * An empty / whitespace-only suffix returns an empty array.
  */
 function filterBySuffix(places, suffix) {
-  const s = suffix.trim().toLowerCase();
+  const s = suffix.trim();
   if (s.length === 0) return [];
-  return places.filter((p) => p.name.toLowerCase().endsWith(s));
+  
+  try {
+    // Ensure the pattern matches at the end (suffix)
+    // Wrap pattern in non-capturing group to handle alternation correctly
+    const pattern = s.endsWith('$') ? s : `(?:${s})$`;
+    const regex = new RegExp(pattern, 'i'); // case-insensitive
+    
+    return places.filter((p) => regex.test(p.name));
+  } catch (error) {
+    // If regex is invalid, return empty array
+    console.error('Invalid regex pattern:', error);
+    return [];
+  }
 }
 
 /**
