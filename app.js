@@ -24,12 +24,11 @@ let nextInputId = 1;
 // ── Map initialisation ─────────────────────────────────────────────
 const map = L.map("map").setView([54, 10], 4); // Center on northern Europe
 
-// Use CartoDB basemaps, that doesn't require Referer.
+// Use Esri WorldStreetMap, that doesn't require Referer.
 // Browsers don't send Referer when opening and HTML file from the file system.
 // Openstreetmap.org requires Referer and shows an error on some tiles when it's missing. 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-  maxZoom: 19,
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
 }).addTo(map);
 
 // ── Global data registry (populated by data/*.js script tags) ───────
