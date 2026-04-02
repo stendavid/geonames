@@ -9,8 +9,20 @@ window.__geodata.countries = [
     "name": "France"
   },
   {
+    "code": "GR",
+    "name": "Greece"
+  },
+  {
+    "code": "IT",
+    "name": "Italy"
+  },
+  {
     "code": "NO",
     "name": "Norway"
+  },
+  {
+    "code": "PE",
+    "name": "Peru"
   },
   {
     "code": "PL",
@@ -19,5 +31,9 @@ window.__geodata.countries = [
   {
     "code": "SE",
     "name": "Sweden"
+  },
+  {
+    "code": "TR",
+    "name": "Turkey"
   }
 ];

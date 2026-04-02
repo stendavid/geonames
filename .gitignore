@@ -19,5 +19,3 @@ build/
 # Downloaded GeoNames country extracts (do not commit)
 Geonames/geoname/
 
-# Generated JSON data
-data/
