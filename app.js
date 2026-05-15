@@ -532,6 +532,47 @@ function analyzeSuffixes(places, minLength = 2, maxLength = 5, minOccurrences = 
 }
 
 /**
+ * Toggle the regional suffixes panel visibility.
+ */
+function toggleRegionalPanel() {
+  const panel = document.getElementById("regional-suffixes-panel");
+  const button = document.getElementById("toggle-regional-panel-btn");
+  
+  if (!panel || !button) return;
+  
+  if (panel.style.display === "none") {
+    panel.style.display = "flex";
+    button.textContent = "Hide Regional Suffixes";
+    updateRegionalSuggestions();
+  } else {
+    panel.style.display = "none";
+    button.textContent = "Suggest Regional Suffixes";
+  }
+}
+
+/**
+ * Update the toggle button state based on country selection.
+ */
+function updateToggleButtonState() {
+  const button = document.getElementById("toggle-regional-panel-btn");
+  const countries = getSelectedCountries();
+  
+  if (!button) return;
+  
+  if (countries.length === 0) {
+    button.disabled = true;
+    // Also hide panel if it's open
+    const panel = document.getElementById("regional-suffixes-panel");
+    if (panel && panel.style.display !== "none") {
+      panel.style.display = "none";
+      button.textContent = "Suggest Regional Suffixes";
+    }
+  } else {
+    button.disabled = false;
+  }
+}
+
+/**
  * Populate the regional suffixes sidebar with suggestions.
  */
 async function updateRegionalSuggestions() {
@@ -547,8 +588,12 @@ async function updateRegionalSuggestions() {
     return;
   }
   
+  // Only update if panel is visible
+  if (panel.style.display === "none") {
+    return;
+  }
+  
   // Show loading state
-  panel.style.display = "flex";
   listEl.innerHTML = '<div class="loading">Analyzing suffixes...</div>';
   
   try {
@@ -679,16 +724,21 @@ document.getElementById("min-places-input").addEventListener("input", () => {
 document.getElementById("country-select").addEventListener("change", () => {
   clearHighlight(); // Clear any active highlight
   search();
+  updateToggleButtonState();
   updateRegionalSuggestions();
 });
 document.getElementById("add-suffix-btn").addEventListener("click", () => {
   createSuffixInput();
+});
+document.getElementById("toggle-regional-panel-btn").addEventListener("click", () => {
+  toggleRegionalPanel();
 });
 
 // ── Initialize on page load ─────────────────────────────────────────
 
 populateCountryDropdown();
 initializeSuffixInputs();
+updateToggleButtonState();
 
 // ── Expose internals for browser-based tests ────────────────────────
 const App = {
@@ -714,4 +764,6 @@ const App = {
   createSuffixInput,
   removeSuffixInput,
   initializeSuffixInputs,
+  toggleRegionalPanel,
+  updateToggleButtonState,
 };
